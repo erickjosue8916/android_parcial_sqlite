@@ -1,5 +1,9 @@
 package com.example.parcial3;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -9,6 +13,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import com.example.parcial3.database.Database;
+import com.example.parcial3.user.User;
+import com.example.parcial3.user.UserService;
+
+import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -16,14 +28,16 @@ import android.widget.Button;
  * create an instance of this fragment.
  */
 public class NewUserFragment extends Fragment {
-
+    EditText inputUserName;
+    EditText inputUserEmail;
+    EditText inputUserAge;
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM1 = "userId";
     private static final String ARG_PARAM2 = "param2";
 
     // TODO: Rename and change types of parameters
-    private String mParam1;
+    private String userId;
     private String mParam2;
 
     public NewUserFragment() {
@@ -52,8 +66,10 @@ public class NewUserFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
+            userId = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
+        } else {
+            userId = null;
         }
     }
 
@@ -61,12 +77,54 @@ public class NewUserFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_new_user, container, false);
-        Button btnCancel = view.findViewById(R.id.btnUserActionCancel);
-        Button btnSave = view.findViewById(R.id.btnUserActionSave);
+        View principalView = inflater.inflate(R.layout.fragment_new_user, container, false);
+
+        Context context = getContext();
+        UserService userService = new UserService(context);
+
+        Button btnCancel = principalView.findViewById(R.id.btnUserActionCancel);
+        Button btnSave = principalView.findViewById(R.id.btnUserActionSave);
+        this.inputUserName = principalView.findViewById(R.id.inputName);
+        this.inputUserEmail = principalView.findViewById(R.id.inputEmail);
+        this.inputUserAge = principalView.findViewById(R.id.inputAge);
+
 
         btnCancel.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_newUserFragment_to_usersFragment));
-        btnSave.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_newUserFragment_to_usersFragment));
-        return view;
+        btnSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                User newUser = NewUserFragment.getUser(principalView);
+                userService.saveUser(newUser);
+                Navigation.findNavController(view).navigate(R.id.action_newUserFragment_to_usersFragment);
+            }
+        });
+        return principalView;
+    }
+
+    static User getUser(View view) {
+        EditText inputUserName = view.findViewById(R.id.inputName);
+        EditText inputUserEmail = view.findViewById(R.id.inputEmail);
+        EditText inputUserAge = view.findViewById(R.id.inputAge);
+
+        String userName = String.valueOf(inputUserName.getText());
+        String userEmail = String.valueOf(inputUserEmail.getText());
+        int userAge = Integer.parseInt(String.valueOf(inputUserAge.getText()));
+
+
+        return  new User(userName, userEmail, userAge);
+
+
+    }
+
+    private static boolean saveUser(Context context, User user) {
+            Database base = new Database(context, "dbUsuario",null,1);
+            SQLiteDatabase con = base.getWritableDatabase();
+            ContentValues insertContent = new ContentValues();
+            insertContent.put("name", user.name);
+            insertContent.put("email", user.email);
+            insertContent.put("age", user.age);
+            con.insert("users", null, insertContent);
+            con.close();
+            return true;
     }
 }

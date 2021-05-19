@@ -1,6 +1,8 @@
 package com.example.parcial3;
 
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -14,8 +16,10 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.example.parcial3.database.Database;
 import com.example.parcial3.user.User;
 import com.example.parcial3.user.UserAdapter;
+import com.example.parcial3.user.UserService;
 
 import java.util.ArrayList;
 
@@ -39,10 +43,11 @@ public class UsersFragment extends Fragment {
 
     public UsersFragment() {
         // Required empty public constructor
-        users = new ArrayList<User>();
-        users.add(new User(1, "Erick Josue Saravia", "erick@gmail.com", 22));
-        users.add(new User(2, "Erick Josue Saravia", "erick@gmail.com", 22));
-        users.add(new User(3, "Erick Josue Saravia", "erick@gmail.com", 22));
+        // users = new ArrayList<User>();
+        // users.add(new User(1, "Erick Josue Saravia", "erick@gmail.com", 22));
+        // users.add(new User(2, "Erick Josue Saravia", "erick@gmail.com", 22));
+        // users.add(new User(3, "Erick Josue Saravia", "erick@gmail.com", 22));
+
     }
 
     /**
@@ -81,6 +86,8 @@ public class UsersFragment extends Fragment {
         ListView usersList = view.findViewById(R.id.usersList);
 
         btnUserActions.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_usersFragment_to_newUserFragment));
+        UserService userService = new UserService(getContext());
+        users = userService.getUsers();
 
         userAdapter = new UserAdapter(getContext(), users);
         usersList.setAdapter(userAdapter);
@@ -92,10 +99,24 @@ public class UsersFragment extends Fragment {
                 User user = users.get(i);
                 Bundle bundle  = new Bundle();
                 bundle.putInt("userId", user.id);
-                Toast.makeText(context, "hello", Toast.LENGTH_LONG).show();
                 Navigation.findNavController(view).navigate(R.id.action_usersFragment_to_newUserFragment, bundle);
             }
         });
         return view;
+    }
+
+    private ArrayList<User> getUsers(Context context) {
+        Database base = new Database(context, "dbUsuario",null,1);
+        SQLiteDatabase con = base.getWritableDatabase();
+        users = new ArrayList<User>();
+        Cursor query = con.rawQuery("SELECT * FROM users", null);
+        while (query.moveToNext()){
+            int id= query.getInt(query.getColumnIndex("id"));
+            String name = query.getString(query.getColumnIndex("name"));
+            String email = query.getString(query.getColumnIndex("email"));
+            int age= query.getInt(query.getColumnIndex("age"));
+            users.add(new User(id, name, email, age));
+        }
+        return users;
     }
 }
